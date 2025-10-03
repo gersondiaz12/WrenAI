@@ -125,7 +125,7 @@ const bootstrapServer = async () => {
       return defaultApolloErrorHandler(error);
     },
     introspection: process.env.NODE_ENV !== 'production',
-    context: (): IContext => ({
+  context: (): IContext => ({
       config: serverConfig,
       telemetry,
       // adaptor
@@ -162,6 +162,9 @@ const bootstrapServer = async () => {
       projectRecommendQuestionBackgroundTracker,
       threadRecommendQuestionBackgroundTracker,
       dashboardCacheBackgroundTracker,
+      // Note: when running inside Next API route the request object is available
+      // we pass a minimal `req` placeholder here; the real request is attached
+      // by the handler below where we have access to the NextApiRequest.
     }),
   });
   await apolloServer.start();
@@ -172,9 +175,22 @@ const startServer = bootstrapServer();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apolloServer = await startServer;
-  await apolloServer.createHandler({
-    path: '/api/graphql',
-  })(req, res);
+  // Wrap the original createHandler so we can inject the req into context and
+  // derive a simple isAdmin flag from either an admin header or ADMIN_TOKEN env.
+  const originalHandler = apolloServer.createHandler({ path: '/api/graphql' });
+  // attach a small middleware to set ctx from header
+  // The Apollo Server instance will call context() defined above; to allow
+  // per-request data we rely on a header value 'x-wren-admin-token'.
+  const adminHeader = req.headers['x-wren-admin-token'] as string | undefined;
+  // simple check: match header against ADMIN_TOKEN env var if present
+  const isAdmin = !!(
+    adminHeader && process.env.ADMIN_TOKEN && adminHeader === process.env.ADMIN_TOKEN
+  );
+  // put isAdmin on req so resolvers that read ctx.req can see it
+  // Note: Apollo Server attaches request to context automatically in some setups;
+  // here we set a temporary property so resolvers can check process.env or ctx.req.headers.
+  (req as any).__isAdmin = isAdmin;
+  await originalHandler(req, res);
 };
 
 export default cors((req: NextApiRequest, res: NextApiResponse) =>

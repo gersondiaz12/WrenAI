@@ -1,0 +1,9 @@
+---
+# Minimal config for local dev to satisfy ConfigService
+# This file is safe for local development. In production, use ~/.wrenai/config.yaml
+- type: llm
+  provider: openai
+  api_base: https://api.openai.com/v1
+  models:
+    - model: gpt-4o-mini
+  active_model: gpt-4o-mini

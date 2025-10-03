@@ -129,13 +129,33 @@ export interface IWrenAIAdaptor {
   createAskFeedback(input: AskFeedbackInput): Promise<AsyncQueryResponse>;
   getAskFeedbackResult(queryId: string): Promise<AskFeedbackResult>;
   cancelAskFeedback(queryId: string): Promise<void>;
+  // Allow external callers to request a reinitialization of any in-memory LLM clients
+  reinitializeFromLLM?(llmDoc: any): Promise<void>;
 }
 
 export class WrenAIAdaptor implements IWrenAIAdaptor {
-  private readonly wrenAIBaseEndpoint: string;
+  private wrenAIBaseEndpoint: string;
 
   constructor({ wrenAIBaseEndpoint }: { wrenAIBaseEndpoint: string }) {
     this.wrenAIBaseEndpoint = wrenAIBaseEndpoint;
+  }
+
+  /**
+   * Reconfigure the adaptor from an LLM config doc. This is intentionally
+   * lightweight: it updates the base endpoint (if provided) and can be
+   * extended later to recreate any in-memory clients.
+   */
+  public async reinitializeFromLLM(llmDoc: any): Promise<void> {
+    try {
+      if (!llmDoc) return;
+      if (llmDoc.api_base && typeof llmDoc.api_base === 'string') {
+        this.wrenAIBaseEndpoint = llmDoc.api_base;
+      }
+      logger.info('WrenAIAdaptor: reinitialized from LLM config');
+    } catch (err: any) {
+      logger.debug('WrenAIAdaptor: failed to reinitialize', err?.message || String(err));
+      throw err;
+    }
   }
 
   public async delete(projectId: number): Promise<void> {

@@ -1,4 +1,5 @@
 import { IConfig } from '@server/config';
+import { NextApiRequest } from 'next';
 import {
   IIbisAdaptor,
   IWrenAIAdaptor,
@@ -81,4 +82,8 @@ export interface IContext {
   projectRecommendQuestionBackgroundTracker: ProjectRecommendQuestionBackgroundTracker;
   threadRecommendQuestionBackgroundTracker: ThreadRecommendQuestionBackgroundTracker;
   dashboardCacheBackgroundTracker: DashboardCacheBackgroundTracker;
+  // incoming HTTP request (available in API route)
+  req?: NextApiRequest;
+  // simple flag derived from request headers / server env to represent admin access
+  isAdmin?: boolean;
 }

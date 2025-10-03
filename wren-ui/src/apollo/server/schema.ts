@@ -1158,6 +1158,8 @@ export const typeDefs = gql`
       filter: ApiHistoryFilterInput
       pagination: ApiHistoryPaginationInput!
     ): ApiHistoryPaginatedResponse!
+    # LLM / AI Service configuration
+    getLLMConfig: JSON
   }
 
   type Mutation {
@@ -1303,5 +1305,9 @@ export const typeDefs = gql`
       data: UpdateInstructionInput!
     ): Instruction!
     deleteInstruction(where: InstructionWhereInput!): Boolean!
+    # LLM / AI Service configuration
+    updateLLMConfig(data: JSON!): JSON
+    testLLMConnection(data: JSON!): JSON
+    switchLLMNow(data: JSON!): JSON
   }
 `;
